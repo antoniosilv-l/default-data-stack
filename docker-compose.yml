@@ -1,8 +1,12 @@
 x-airflow-common:
   &airflow-common
-  build: ./airflow
+  build: 
+    context: ./airflow
+    dockerfile: Dockerfile
+  entrypoint: /entrypoint.sh
   environment:
     &airflow-common-env
+    AIRFLOW_HOME: /opt/airflow
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
@@ -10,20 +14,12 @@ x-airflow-common:
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
-  volumes:
-    - ${PWD}/airflow/dags:/opt/airflow/dags
-    - ${PWD}/airflow/logs:/opt/airflow/logs
-    - ${PWD}/airflow/config:/opt/airflow/config
-    - ${PWD}/airflow/plugins:/opt/airflow/plugins
   user: "airflow:airflow"
-  depends_on:
-    &airflow-common-depends-on
-    postgres:
-      condition: service_healthy
-    prometheus:
-      condition: service_healthy
-    grafana:
-      condition: service_healthy
+  volumes:
+    - "./airflow/dags:/opt/airflow/dags"
+    - "./airflow/logs:/opt/airflow/logs"
+    - "./airflow/config:/opt/airflow/config"
+    - "./airflow/plugins:/opt/airflow/plugins"
   networks:
     - monitoring
 
@@ -67,7 +63,7 @@ services:
       - prometheus
     mem_limit: 1g
     cpus: "1.0"
-
+    
   postgres:
     image: postgres:13
     environment:
@@ -99,7 +95,6 @@ services:
       start_period: 30s
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
     mem_limit: 2g
@@ -116,7 +111,6 @@ services:
       start_period: 30s
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
     mem_limit: 1g
@@ -133,7 +127,6 @@ services:
       start_period: 30s
     restart: always
     depends_on:
-      <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
     mem_limit: 1g
@@ -189,7 +182,7 @@ services:
         fi
         mkdir -p /sources/logs /sources/dags /sources/plugins
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
-        exec /entrypoint airflow version
+        exec /entrypoint.sh version
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_MIGRATE: 'true'
@@ -199,7 +192,7 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}:/sources
+      - ./airflow:/sources
 
   airflow-cli:
     <<: *airflow-common

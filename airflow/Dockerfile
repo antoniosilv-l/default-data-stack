@@ -1,5 +1,11 @@
 FROM python:3.12-slim-bookworm
 
+ENV PATH="/home/airflow/.local/bin:$PATH"
+ENV PYTHONPATH="/home/airflow/.local/lib/python3.12/site-packages:$PYTHONPATH"
+ENV AIRFLOW_HOME=/opt/airflow
+
+WORKDIR ${AIRFLOW_HOME}
+
 # =====================================================
 USER root
 
@@ -23,32 +29,24 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+COPY scripts/entrypoint.sh /entrypoint.sh
+
 RUN groupadd -r airflow \
     && useradd -r -m -g airflow airflow
 
-RUN mkdir /opt/airflow \
-    && mkdir \
-        /opt/airflow/dags \
-        /opt/airflow/logs \
-        /opt/airflow/logs/scheduler \
-        /opt/airflow/plugins \
-        /opt/airflow/config \ 
+RUN mkdir -p \
+        dags \
+        logs \
+        plugins \
+        config \
     && chown -R airflow:airflow /opt/airflow/ \
-    && chmod -R 755 /opt/airflow
+    && chmod -R 755 /opt/airflow \
+    && chmod +x /entrypoint.sh
 
 # =====================================================
 USER airflow
 
-WORKDIR /opt/airflow
-
-ENV PATH="/home/airflow/.local/bin:$PATH"
 ENV AIRFLOW_VERSION=2.10.3
-ENV AIRFLOW_HOME=/opt/airflow
-
-COPY ./config ${AIRFLOW_HOME}/config
-COPY ./dags ${AIRFLOW_HOME}/dags
-COPY ./logs ${AIRFLOW_HOME}/logs
-COPY ./plugins ${AIRFLOW_HOME}/plugins
 
 RUN PYTHON_VERSION="$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')" \
     && CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt" \
@@ -56,4 +54,4 @@ RUN PYTHON_VERSION="$(python -c 'import sys; print(f"{sys.version_info.major}.{s
     && pip install "apache-airflow==${AIRFLOW_VERSION}" --constraint "${CONSTRAINT_URL}" \
     && pip install apache-airflow-providers-postgres
 
-ENTRYPOINT ["airflow"]
+ENTRYPOINT ["/entrypoint.sh"]
