@@ -25,11 +25,13 @@ RUN apt-get update \
         libjpeg-dev \
         liblcms2-dev \
         zlib1g-dev \
+        vim \
     && apt-get autoremove -yqq --purge \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 COPY scripts/entrypoint.sh /entrypoint.sh
+COPY scripts/get_create_user.sh /get_create_user.sh
 
 RUN groupadd -r airflow \
     && useradd -r -m -g airflow airflow
@@ -41,7 +43,7 @@ RUN mkdir -p \
         config \
     && chown -R airflow:airflow /opt/airflow/ \
     && chmod -R 755 /opt/airflow \
-    && chmod +x /entrypoint.sh
+    && chmod +x /entrypoint.sh /get_create_user.sh
 
 # =====================================================
 USER airflow

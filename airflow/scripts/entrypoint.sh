@@ -7,7 +7,7 @@ if [ "$1" = "bash" ]; then
 else
     if [ "$1" = "webserver" ] || [ "$1" = "scheduler" ]; then
         echo "Initializing database..."
-        airflow db init
+        airflow db migrate
     fi
     exec python -m airflow "$@"
 fi
