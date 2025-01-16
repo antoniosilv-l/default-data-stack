@@ -1,6 +1,8 @@
+# ambientes virtuais
+.venv
+
 # folders/pastas
 logs/
 
 # files/arquivos
 .env
-

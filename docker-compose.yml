@@ -1,6 +1,6 @@
 x-airflow-common:
   &airflow-common
-  build: 
+  build:
     context: ./airflow
     dockerfile: Dockerfile
   entrypoint: /entrypoint.sh
@@ -68,7 +68,7 @@ services:
       - prometheus
     mem_limit: 1g
     cpus: "1.0"
-    
+
   postgres:
     image: postgres:13
     container_name: postgres

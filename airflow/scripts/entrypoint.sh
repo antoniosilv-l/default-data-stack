@@ -11,5 +11,3 @@ else
     fi
     exec python -m airflow "$@"
 fi
-
-
